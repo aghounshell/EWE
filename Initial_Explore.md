@@ -1,9 +1,9 @@
 Initial\_Explore
 ================
+AGH
+13Nov19
 
 ## Initial exploration of EWE data for Eco-DAS Extreme Events project
-
-AGH, 13Nov19
 
 Load data and toolboxes. Create dataset that includes single unique
 accessions
