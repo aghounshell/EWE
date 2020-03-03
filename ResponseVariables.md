@@ -75,6 +75,23 @@ EEdata$PhysBroadType [EEdata$PhysicalResponseMeasured %in% c("N-NH4","N-NO2","N-
 
 ## Manipulating the chemical response variable (from EL)
 
+``` r
+EEdata$ChemBroadType <- factor(rep(NA,length(EEdata$ChemicalResponse_ElementMaterial_Measured)),
+                                   levels=c("Temperature", "Sediment Movement", "Water Movement", "Water Quality (DO, pH, Conductivity, Salinity, Clarity)", "Sediment Quality", "Nutrients (C,N,P,Si)"))
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c(" water temperature","water temperature", "air temperature")] <- "Temperature"
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("channel form","sediment transport","denudation rate","sediment")] <- "Sediment Movement"
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("current speed","river flow","salinity","streamflow","water level","water retention time","water connectivity", "swash time","swash zone","wave height","wave period")] <- "Water Movement"
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("dissolved oxygen","DO","pH", "turbidity","TSS/sediment","Conductivity","Salinity" )] <- "Water Quality (DO, pH, Conductivity, Salinity, Clarity)"
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("sediment - grain size","sediment - organic matter","soil moisture")] <- "Sediment Quality"
+
+EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("N-NH4","N-NO2","N-NO3 (includes NO3+NO2)","N-TN","P-SRP/PO4","P-TP","SiO2","C-CO2","C-DIC","C-DOC","C-POC")] <- "Nutrients (C,N,P,Si)"
+```
+
 ## Simplifying the dataframe (from EL)
 
 ``` r
@@ -83,3 +100,19 @@ EEdata %>%
 ```
 
 ## Separate out Bio, Phys, and Chem parameters, then merge?
+
+``` r
+EEbio <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,OrgLevel)
+EEbio <- EEbio[complete.cases(EEbio),]
+
+EEphys <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,PhysBroadType)
+EEphys <- EEphys[complete.cases(EEphys),]
+
+EEchem <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,ChemBroadType)
+EEchem <- EEchem[complete.cases(EEchem),]
+
+EEall <- merge(EEphys,EEbio,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"),sort=TRUE)
+# Did not merge correctly - got rid of some of the EEMBio parameters?
+
+EEall <- merge(EEall,EEchem,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"))
+```
