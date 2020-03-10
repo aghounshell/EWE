@@ -172,12 +172,3 @@ ggplot(EEcount,mapping=aes(y=Freq,axis1=PhysBroadType,axis2=ProximateEvent_Type_
   geom_stratum(width = 1/12, fill = "black", color = "grey") +
   geom_label(stat = "stratum", infer.label = TRUE)
 ```
-
-## Did not end up using (but keep just in case : )
-
-```{r} 
-EEall <- merge(EEall,EEchem_dups,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"),all=TRUE,sort=TRUE)
-
-EEcount <- EEall %>% group_by(PhysBroadType,ProximateEvent_Type_broad,OrgLevel,Type_system_broad) 
-count(EEall['PhysBroadType']=='Temperature' & EEall['ProximateEvent_Type_broad']=='Flood' & EEall['OrgLevel']=='community' & EEall['Type_system_broad']=='freshwater')
-```

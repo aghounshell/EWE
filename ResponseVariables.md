@@ -1,7 +1,7 @@
 ResponseVariables
 ================
 AGH
-03Mar20
+10Mar20
 
 ## Following E. Larson Combined Alluvial Plot
 
@@ -16,7 +16,7 @@ PhysicalResponseMeasured to ‘Air temperature’ or ‘Water temperature’
 Load data and clean-up (a bit\!)
 
 ``` r
-pacman::p_load(tidyverse,ggplot2)
+pacman::p_load(tidyverse,ggplot2,dplyr,ggalluvial)
 
 EEdata <- read.csv('C:/Users/ahoun/Dropbox/EWE/EWE/Data/CleanedExtremeEventsData_04Dec2019.csv')
 ```
@@ -95,24 +95,81 @@ EEdata$ChemBroadType [EEdata$ChemicalResponse_ElementMaterial_Measured %in% c("N
 ## Simplifying the dataframe (from EL)
 
 ``` r
-EEdata %>% 
-  select(UniqueAccession, ProximateEvent_Type_broad, Type_system_broad, OrgLevel, PhysBroadType, ChemBroadType) -> EEdata_simple
+EEdata_simple <- EEdata %>% 
+  select(UniqueAccession, ProximateEvent_Type_broad, Type_system_broad, OrgLevel, PhysBroadType, ChemBroadType)
 ```
 
-## Separate out Bio, Phys, and Chem parameters, then merge?
+## Separate out Bio, Phys, and Chem parameters and remove duplicate values (i.e., if studies measured more than one ‘ecosystem’ response, this is set to one instead of two)
 
 ``` r
 EEbio <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,OrgLevel)
 EEbio <- EEbio[complete.cases(EEbio),]
 
+EEbio_dups <- EEbio %>% distinct()
+
+
 EEphys <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,PhysBroadType)
 EEphys <- EEphys[complete.cases(EEphys),]
+
+EEphys_dups <- EEphys %>% distinct()
+
 
 EEchem <- EEdata_simple %>% select(UniqueAccession,ProximateEvent_Type_broad,Type_system_broad,ChemBroadType)
 EEchem <- EEchem[complete.cases(EEchem),]
 
-EEall <- merge(EEphys,EEbio,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"),sort=TRUE)
-# Did not merge correctly - got rid of some of the EEMBio parameters?
-
-EEall <- merge(EEall,EEchem,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"))
+EEchem_dups <- EEchem %>% distinct()
 ```
+
+## Combine Chem and Phys data into one matrix - will ultimately combine for alluvium plot; removed duplicate values (for Chem and Phys to eliminate double counting)
+
+``` r
+EEchem_dups <- EEchem_dups %>% rename(PhysBroadType = ChemBroadType)
+
+EEphyschem_dups <- rbind.data.frame(EEchem_dups,EEphys_dups)
+
+EEphyschem_dups <- EEphyschem_dups %>% arrange(UniqueAccession) %>% distinct()
+```
+
+## Merge PhysChem and Bio dataframes - note: this will result in double counting\!
+
+``` r
+EEall <- merge(EEphyschem_dups,EEbio_dups,by=c("UniqueAccession","ProximateEvent_Type_broad","Type_system_broad"),all=TRUE,sort=TRUE)
+# NOTE: Will double count parameters!
+```
+
+## Set NA values to ‘none’ to indicate this parameter was not collected
+
+``` r
+# For PhysChem parameters
+levels <- levels(EEall$PhysBroadType)
+levels[length(levels) + 1] <- "None"
+
+EEall$PhysBroadType <- factor(EEall$PhysBroadType, levels = levels)
+EEall$PhysBroadType[is.na(EEall$PhysBroadType)] <- "None"
+
+# For Bio parameters
+levels <- levels(EEall$OrgLevel)
+levels[length(levels) + 1] <- "None"
+
+EEall$OrgLevel <- factor(EEall$OrgLevel, levels = levels)
+EEall$OrgLevel[is.na(EEall$OrgLevel)] <- "None"
+```
+
+## Count the frequency for each ‘alluvial’ category
+
+``` r
+EEcount <- rename(count(EEall, PhysBroadType,ProximateEvent_Type_broad,OrgLevel,Type_system_broad), Freq = n)
+```
+
+## Try out an alluvial plot? See reference: <https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html>
+
+    ## Warning in to_lodes_form(data = data, axes = axis_ind, discern =
+    ## params$discern): Some strata appear at multiple axes.
+    
+    ## Warning in to_lodes_form(data = data, axes = axis_ind, discern =
+    ## params$discern): Some strata appear at multiple axes.
+    
+    ## Warning in to_lodes_form(data = data, axes = axis_ind, discern =
+    ## params$discern): Some strata appear at multiple axes.
+
+![](ResponseVariables_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
